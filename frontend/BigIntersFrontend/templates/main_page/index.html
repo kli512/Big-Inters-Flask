@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Lookup{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div id="mainContent">
+  <form action="javascript:generateResponse()">
+    Summoner Name: <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" type='text'
+      id='summonerBox'> <br>
+    Number of Matches: <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" type='text'
+      id='matchesBox'> <br>
+    <input type="radio" id="NA1" name="regionSelect" value="NA1">
+    <label for="NA1">NA</label><br>
+    <input type="radio" id="EUW1" name="regionSelect" value="EUW1">
+    <label for="EUW1">EUW</label><br>
+    Customs? <input type='checkbox' id='CustomsBox' name="queueSelect" value="0"> <br>
+    5v5 ARAM? <input type='checkbox' id='ARAMBox' name="queueSelect" value="450"> <br>
+    5v5 Blind Pick? <input type='checkbox' id='BlindBox' name="queueSelect" value="430"> <br>
+    5v5 Draft Pick? <input type='checkbox' id='DraftBox' name="queueSelect" value="400"> <br>
+    5v5 Ranked Solo/Duo? <input type='checkbox' id='SoloDuoBox' name="queueSelect" value="420"> <br>
+    5v5 Ranked Flex? <input type='checkbox' id='FlexBox' name="queueSelect" value="440"> <br>
+
+    <input type="submit">
+  </form>
+</div>
+<div id="responseContent"></div>
+
+<script>
+  var responseDiv = document.getElementById('responseContent');
+
+  function createCORSRequest(method, url) {
+    var xhr = new XMLHttpRequest();
+    if ("withCredentials" in xhr) {
+      xhr.open(method, url, true);
+    } else if (typeof XDomainRequest != "undefined") {
+      xhr = new XDomainRequest();
+      xhr.open(method, url);
+    } else {
+      xhr = null;
+    }
+    return xhr;
+  }
+
+  function updateResponseContent(data) {
+    var responseTable = document.createElement('table');
+    var tHead = responseTable.createTHead();
+    var row = tHead.insertRow();
+
+    var header = ['Summoner', 'Encounters', 'Kills', 'Deaths', 'Assists'];
+    for (var headerName of header) {
+      let th = document.createElement('th');
+      th.innerText = headerName;
+
+      row.appendChild(th);
+    }
+
+    for (var summoner_i = 0; summoner_i < data.length; summoner_i++) {
+      summoner = data[summoner_i];
+      row = responseTable.insertRow();
+      row.insertCell().innerText = summoner[0];
+      row.insertCell().innerText = summoner[1]['encounters'];
+      row.insertCell().innerText = summoner[1]['kda']['kills'];
+      row.insertCell().innerText = summoner[1]['kda']['deaths'];
+      row.insertCell().innerText = summoner[1]['kda']['assists'];
+    }
+
+    responseDiv.innerText = '';
+    responseDiv.appendChild(responseTable);
+  }
+
+  function generateResponse() {
+    var summonerBox = document.getElementById('summonerBox'),
+      matchesBox = document.getElementById('matchesBox'),
+      regionRadios = document.getElementsByName('regionSelect'),
+      queueBoxes = document.getElementsByName('queueSelect');
+
+    var summonerName = summonerBox.value,
+      nMatches = matchesBox.value,
+      region = null,
+      queues = [];
+
+    for (var i = 0; i < regionRadios.length; i++)
+      if (regionRadios[i].checked)
+        region = regionRadios[i].value;
+
+    for (var i = 0; i < queueBoxes.length; i++)
+      if (queueBoxes[i].checked)
+        queues.push(queueBoxes[i].value);
+
+    responseDiv.innerText = 'Loading...';
+
+    var xhr = createCORSRequest('POST', '73ec4d8d.ngrok.io/bi_api/analyze');
+    if (!xhr){
+      alert('CORS not supported on your browser!');
+      return;
+    }
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = () => {
+      if(xhr.status == 200) {
+        updateResponseContent(JSON.parse(xhr.responseText)['responseData']);
+        return;
+      }
+      else if (xhr.status >= 500)
+        alert('Internal Server Error');
+      else if (xhr.status >= 400)
+        alert('Invalid player request!');
+      else
+        alert('Unknown error occured');
+      responseDiv.innerText = 'Error!';
+    }
+    xhr.onerror = () => {
+      alert('Transport error occured. Contact server owner');
+    }
+    payload = JSON.stringify({
+      'summoner': summonerName,
+      'matches': nMatches,
+      'queues': queues,
+      'region': region
+    })
+    console.log(payload);
+    xhr.send(payload);
+  }
+</script>
+{% endblock %}
