@@ -130,9 +130,9 @@ sorttable = {
 	          row_array[row_array.length] = [sorttable.getInnerText(rows[j].cells[col]), rows[j]];
 	        }
 	        /* If you want a stable sort, uncomment the following line */
-	        //sorttable.shaker_sort(row_array, this.sorttable_sortfunction);
+	        sorttable.shaker_sort(row_array, this.sorttable_sortfunction);
 	        /* and comment out this one */
-          row_array.sort(this.sorttable_sortfunction);
+          // row_array.sort(this.sorttable_sortfunction);
           row_array.reverse();
 
 	        tb = this.sorttable_tbody;
@@ -148,35 +148,15 @@ sorttable = {
 
   guessType: function(table, column) {
     // guess the type of a column based on its first non-blank row
-    sortfn = sorttable.sort_alpha;
     for (var i=0; i<table.tBodies[0].rows.length; i++) {
       text = sorttable.getInnerText(table.tBodies[0].rows[i].cells[column]);
       if (text != '') {
-        if (text.match(/^-?[£$¤]?[\d,.]+%?$/)) {
-          return sorttable.sort_numeric;
-        }
-        // check for a date: dd/mm/yyyy or dd/mm/yy
-        // can have / or . or - as separator
-        // can be mm/dd as well
-        possdate = text.match(sorttable.DATE_RE)
-        if (possdate) {
-          // looks like a date
-          first = parseInt(possdate[1]);
-          second = parseInt(possdate[2]);
-          if (first > 12) {
-            // definitely dd/mm
-            return sorttable.sort_ddmm;
-          } else if (second > 12) {
-            return sorttable.sort_mmdd;
-          } else {
-            // looks like a date, but we can't tell which, so assume
-            // that it's dd/mm (English imperialism!) and keep looking
-            sortfn = sorttable.sort_ddmm;
-          }
+        if (!text.match(/^-?[£$¤]?[\d,.]+%?$/)) {
+          return sorttable.sort_alpha;
         }
       }
     }
-    return sortfn;
+    return sorttable.sort_numeric;
   },
 
   getInnerText: function(node) {
@@ -242,6 +222,7 @@ sorttable = {
      each sort function takes two parameters, a and b
      you are comparing a[0] and b[0] */
   sort_numeric: function(a,b) {
+    console.log('SORTING_NUMERIC');
     aa = parseFloat(a[0].replace(/[^0-9.-]/g,''));
     if (isNaN(aa)) aa = 0;
     bb = parseFloat(b[0].replace(/[^0-9.-]/g,''));
@@ -249,8 +230,10 @@ sorttable = {
     return aa-bb;
   },
   sort_alpha: function(a,b) {
-    if (a[0]==b[0]) return 0;
-    if (a[0]<b[0]) return -1;
+    let x = a[0].toLowerCase();
+    let y = b[0].toLowerCase();
+    if (x == y) return 0;
+    if (x < y) return -1;
     return 1;
   },
   sort_ddmm: function(a,b) {

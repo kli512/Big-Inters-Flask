@@ -108,3 +108,7 @@ table {
   margin-left: auto;
   margin-right: auto;
 }
+
+td, th {
+  padding-right: 1em;
+}

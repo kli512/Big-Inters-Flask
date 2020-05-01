@@ -20,22 +20,50 @@ def run_analysis(summoner: str, n_matches: Union[str, int], queues: Union[List[s
     matches_r = RAR.get(
         f'/lol/match/v4/matchlists/by-account/{account_eid}', endIndex=[n_matches], queue=queues)
     matches = matches_r.json()['matches']
-    player_kdas = defaultdict(lambda: {'encounters': 0, 'kills': 0, 'deaths': 0, 'assists': 0})
+
+    player_stats = defaultdict(lambda: {
+        'summonerName': None,
+        'encounters': 0,
+        'wins': 0,
+        'kills': 0,
+        'deaths': 0,
+        'assists': 0,
+        'cs': 0,
+        'visionScore': 0,
+        'damageDealt': 0
+    })
 
     for match in matches:
         match_r = RAR.get(f'/lol/match/v4/matches/{match["gameId"]}')
 
         players = match_r.json()['participantIdentities']
-        players = dict([(player['participantId'], player['player']
-                        ['summonerName']) for player in players])
+        players = {player['participantId']: player['player'] for player in players}
 
         player_data = match_r.json()['participants']
 
+        team = list(filter(lambda p: players[p['participantId']]['accountId'] == account_eid, player_data))[0]['teamId']
+
         for player in player_data:
-            summoner_name = players[player['participantId']]
-            player_kdas[summoner_name]['encounters'] += 1
-            for val in ('kills', 'deaths', 'assists'):
-                player_kdas[summoner_name][val] += player['stats'][val]
+            if player['teamId'] != team:
+                continue
+            player_info = players[player['participantId']]
+            account_id = player_info['accountId']
+
+            if player_stats[account_id]['summonerName'] == None:
+                player_stats[account_id]['summonerName'] = player_info['summonerName']
+
+            player_stats[account_id]['encounters'] += 1
+
+            if player['stats']['win']:
+                player_stats[account_id]['wins'] += 1
+
+            game_stats = player['stats']
+
+            for val in ('kills', 'deaths', 'assists', 'visionScore'):
+                player_stats[account_id][val] += game_stats[val]
+
+            player_stats[account_id]['cs'] += game_stats['totalMinionsKilled'] + game_stats['neutralMinionsKilled']
+            player_stats[account_id]['damageDealt'] += game_stats['totalDamageDealtToChampions']
 
     print('Analysis finished', file=sys.stderr)
-    return {'requestData': {'summoner': summoner, 'matches': n_matches, 'queues': queues}, 'responseData': list(player_kdas.items())}
+    return {'requestData': {'summoner': summoner, 'matches': n_matches, 'queues': queues}, 'responseData': list(player_stats.values())}

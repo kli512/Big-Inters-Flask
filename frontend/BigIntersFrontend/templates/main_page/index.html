@@ -21,49 +21,123 @@
     5v5 Draft Pick? <input type='checkbox' id='DraftBox' name="queueSelect" value="400"> <br>
     5v5 Ranked Solo/Duo? <input type='checkbox' id='SoloDuoBox' name="queueSelect" value="420"> <br>
     5v5 Ranked Flex? <input type='checkbox' id='FlexBox' name="queueSelect" value="440"> <br>
-
     <input type="submit">
   </form>
 </div>
 <div id="responseContent">
   <h3 id="responseStatus"></h3>
-  <table id="responseTable"></table>
+  <button id="displayMode" onclick="javascript:updateTableDisplay()" style="display: none">Per Game</button>
+  <table id="cumulativeResponseTable" style="display: none">
+    <thead>
+      <tr>
+        <th>Summoner</th>
+        <th>Encounters</th>
+        <th>KDA</th>
+        <th>Kills</th>
+        <th>Deaths</th>
+        <th>Assists</th>
+        <th>CS</th>
+        <th>Vision Score</th>
+        <th>Damage Dealt</th>
+      </tr>
+    </thead>
+    <tbody id="cumulativeResponseBody"></tbody>
+  </table>
+  <table id="perGameResponseTable" style="display: none">
+    <thead>
+      <tr>
+        <th>Summoner</th>
+        <th>Encounters</th>
+        <th>KDA</th>
+        <th>Kills</th>
+        <th>Deaths</th>
+        <th>Assists</th>
+        <th>CS</th>
+        <th>Vision Score</th>
+        <th>Damage Dealt</th>
+      </tr>
+    </thead>
+    <tbody id="perGameResponseBody"></tbody>
+  </table>
 </div>
 
 <script src="{{ url_for('static', filename='sorttable.js') }}"></script>
 <script>
   var responseContent = document.getElementById('responseContent');
   var responseStatus = document.getElementById('responseStatus');
-  var responseTable = document.getElementById('responseTable');
+
+  var cumulativeResponseTable = document.getElementById('cumulativeResponseTable');
+  var perGameResponseTable = document.getElementById('perGameResponseTable');
+
+  var perGameDisplay = true;
+  var displayModeButton = document.getElementById('displayMode');
+
+  var cumulativeResponseBody = document.getElementById('cumulativeResponseBody');
+  var perGameResponseBody = document.getElementById('perGameResponseBody');
+
+  function updateTableDisplay() {
+    perGameDisplay = !perGameDisplay;
+    if (perGameDisplay) {
+      displayModeButton.innerText = 'Per Game';
+      perGameResponseTable.style.display = 'block';
+      cumulativeResponseTable.style.display = 'none';
+    }
+    else {
+      displayModeButton.innerText = 'Cumulative';
+      perGameResponseTable.style.display = 'none';
+      cumulativeResponseTable.style.display = 'block';
+    }
+  }
 
   function updateResponseContent(data) {
-    responseTable.innerHTML = '';
+    data.sort((x, y) => { return y.encounters - x.encounters; })
+    cumulativeResponseBody.innerHTML = '';
+    perGameResponseBody.innerHTML = '';
 
-    var tHead = responseTable.createTHead();
-    var row = tHead.insertRow();
-
-    var header = ['Summoner', 'Encounters', 'Kills', 'Deaths', 'Assists'];
-    for (var headerName of header) {
-      let th = document.createElement('th');
-      th.innerText = headerName;
-
-      row.appendChild(th);
-    }
-
-    var tBody = responseTable.createTBody();
+    /*
+    'summonerName': None,
+    'encounters': 0,
+    'wins': 0,
+    'kills': 0,
+    'deaths': 0,
+    'assists': 0,
+    'cs': 0,
+    'visionScore': 0,
+    'damageDealt': 0
+    */
 
     for (var summoner_i = 0; summoner_i < data.length; summoner_i++) {
       summoner = data[summoner_i];
-      row = tBody.insertRow();
-      row.insertCell().innerText = summoner[0];
-      row.insertCell().innerText = summoner[1]['encounters'];
-      row.insertCell().innerText = summoner[1]['kills'];
-      row.insertCell().innerText = summoner[1]['deaths'];
-      row.insertCell().innerText = summoner[1]['assists'];
+      row = cumulativeResponseBody.insertRow();
+      row.insertCell().innerText = summoner['summonerName'];
+      row.insertCell().innerText = summoner['encounters'];
+      row.insertCell().innerText = ((summoner['kills'] + summoner['assists']) / summoner['deaths']).toFixed(2);
+      row.insertCell().innerText = summoner['kills'];
+      row.insertCell().innerText = summoner['deaths'];
+      row.insertCell().innerText = summoner['assists'];
+      row.insertCell().innerText = summoner['cs'];
+      row.insertCell().innerText = summoner['visionScore'];
+      row.insertCell().innerText = summoner['damageDealt'];
+
+      row = perGameResponseBody.insertRow();
+      let encounters = summoner['encounters'];
+      row.insertCell().innerText = summoner['summonerName'];
+      row.insertCell().innerText = summoner['encounters'];
+      row.insertCell().innerText = ((summoner['kills'] + summoner['assists']) / (summoner['deaths'] * encounters)).toFixed(2);
+      row.insertCell().innerText = (summoner['kills'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['deaths'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['assists'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['cs'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['visionScore'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['damageDealt'] / encounters).toFixed(2);
     }
 
     responseStatus.innerText = '';
-    sorttable.makeSortable(responseTable);
+    displayModeButton.style.display = 'block';
+    perGameResponseTable.style.display = 'block';
+    perGameDisplay = true;
+    sorttable.makeSortable(cumulativeResponseTable);
+    sorttable.makeSortable(perGameResponseTable);
   }
 
   function generateResponse() {
@@ -87,7 +161,7 @@
 
     responseStatus.innerText = 'Loading...';
 
-    var xhr = new XMLHttpRequest()
+    var xhr = new XMLHttpRequest();
     xhr.open('POST', '/bi_api/analyze');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = () => {
@@ -102,16 +176,16 @@
       else
         alert('Unknown error occured');
       responseStatus.innerText = 'Error!';
-    }
+    };
     xhr.onerror = () => {
       alert('Transport error occured. Contact server owner');
-    }
+    };
     payload = JSON.stringify({
       'summoner': summonerName,
       'matches': nMatches,
       'queues': queues,
       'region': region
-    })
+    });
     console.log(payload);
     xhr.send(payload);
   }

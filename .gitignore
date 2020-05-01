@@ -1,6 +1,9 @@
 .vscode
 *.cfg
 
+backend/start_backend.sh
+frontend/start_frontend.sh
+
 # Github's python .gitignore
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
