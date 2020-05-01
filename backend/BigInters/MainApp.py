@@ -4,12 +4,10 @@ from typing import Set, Union
 import BigInters.Analyzer.Analyzer as Analyzer
 from flask import (Blueprint, flash, g, redirect, render_template, request,
                    url_for, jsonify, current_app)
-from flask_cors import CORS
 
 from BigInters.Analyzer.RiotAPI.RiotAPI import ServerException, ClientException
 
 bp = Blueprint('MainApp', __name__)
-CORS(bp)
 
 @bp.route('/')
 def index():

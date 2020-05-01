@@ -11,7 +11,7 @@
       id='summonerBox'> <br>
     Number of Matches: <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" type='text'
       id='matchesBox'> <br>
-    <input type="radio" id="NA1" name="regionSelect" value="NA1">
+    <input type="radio" id="NA1" name="regionSelect" value="NA1" checked="checked">
     <label for="NA1">NA</label><br>
     <input type="radio" id="EUW1" name="regionSelect" value="EUW1">
     <label for="EUW1">EUW</label><br>
@@ -25,26 +25,20 @@
     <input type="submit">
   </form>
 </div>
-<div id="responseContent"></div>
+<div id="responseContent">
+  <h3 id="responseStatus"></h3>
+  <table id="responseTable"></table>
+</div>
 
+<script src="{{ url_for('static', filename='sorttable.js') }}"></script>
 <script>
-  var responseDiv = document.getElementById('responseContent');
-
-  function createCORSRequest(method, url) {
-    var xhr = new XMLHttpRequest();
-    if ("withCredentials" in xhr) {
-      xhr.open(method, url, true);
-    } else if (typeof XDomainRequest != "undefined") {
-      xhr = new XDomainRequest();
-      xhr.open(method, url);
-    } else {
-      xhr = null;
-    }
-    return xhr;
-  }
+  var responseContent = document.getElementById('responseContent');
+  var responseStatus = document.getElementById('responseStatus');
+  var responseTable = document.getElementById('responseTable');
 
   function updateResponseContent(data) {
-    var responseTable = document.createElement('table');
+    responseTable.innerHTML = '';
+
     var tHead = responseTable.createTHead();
     var row = tHead.insertRow();
 
@@ -56,18 +50,20 @@
       row.appendChild(th);
     }
 
+    var tBody = responseTable.createTBody();
+
     for (var summoner_i = 0; summoner_i < data.length; summoner_i++) {
       summoner = data[summoner_i];
-      row = responseTable.insertRow();
+      row = tBody.insertRow();
       row.insertCell().innerText = summoner[0];
       row.insertCell().innerText = summoner[1]['encounters'];
-      row.insertCell().innerText = summoner[1]['kda']['kills'];
-      row.insertCell().innerText = summoner[1]['kda']['deaths'];
-      row.insertCell().innerText = summoner[1]['kda']['assists'];
+      row.insertCell().innerText = summoner[1]['kills'];
+      row.insertCell().innerText = summoner[1]['deaths'];
+      row.insertCell().innerText = summoner[1]['assists'];
     }
 
-    responseDiv.innerText = '';
-    responseDiv.appendChild(responseTable);
+    responseStatus.innerText = '';
+    sorttable.makeSortable(responseTable);
   }
 
   function generateResponse() {
@@ -89,16 +85,13 @@
       if (queueBoxes[i].checked)
         queues.push(queueBoxes[i].value);
 
-    responseDiv.innerText = 'Loading...';
+    responseStatus.innerText = 'Loading...';
 
-    var xhr = createCORSRequest('POST', '73ec4d8d.ngrok.io/bi_api/analyze');
-    if (!xhr){
-      alert('CORS not supported on your browser!');
-      return;
-    }
+    var xhr = new XMLHttpRequest()
+    xhr.open('POST', '/bi_api/analyze');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = () => {
-      if(xhr.status == 200) {
+      if (xhr.status == 200) {
         updateResponseContent(JSON.parse(xhr.responseText)['responseData']);
         return;
       }
@@ -108,7 +101,7 @@
         alert('Invalid player request!');
       else
         alert('Unknown error occured');
-      responseDiv.innerText = 'Error!';
+      responseStatus.innerText = 'Error!';
     }
     xhr.onerror = () => {
       alert('Transport error occured. Contact server owner');
