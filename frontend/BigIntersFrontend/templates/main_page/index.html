@@ -123,7 +123,7 @@
       let encounters = summoner['encounters'];
       row.insertCell().innerText = summoner['summonerName'];
       row.insertCell().innerText = summoner['encounters'];
-      row.insertCell().innerText = ((summoner['kills'] + summoner['assists']) / (summoner['deaths'] * encounters)).toFixed(2);
+      row.insertCell().innerText = ((summoner['kills'] + summoner['assists']) / summoner['deaths']).toFixed(2);
       row.insertCell().innerText = (summoner['kills'] / encounters).toFixed(2);
       row.insertCell().innerText = (summoner['deaths'] / encounters).toFixed(2);
       row.insertCell().innerText = (summoner['assists'] / encounters).toFixed(2);
