@@ -36,9 +36,10 @@
         <th>Kills</th>
         <th>Deaths</th>
         <th>Assists</th>
-        <th>CS</th>
+        <th>Total CS</th>
         <th>Vision Score</th>
         <th>Damage Dealt</th>
+        <th>Game Time</th>
       </tr>
     </thead>
     <tbody id="cumulativeResponseBody"></tbody>
@@ -52,9 +53,10 @@
         <th>Kills</th>
         <th>Deaths</th>
         <th>Assists</th>
-        <th>CS</th>
+        <th>CS/min</th>
         <th>Vision Score</th>
         <th>Damage Dealt</th>
+        <th>Game Time</th>
       </tr>
     </thead>
     <tbody id="perGameResponseBody"></tbody>
@@ -74,6 +76,32 @@
 
   var cumulativeResponseBody = document.getElementById('cumulativeResponseBody');
   var perGameResponseBody = document.getElementById('perGameResponseBody');
+
+  sorttable.makeSortable(cumulativeResponseTable);
+  sorttable.makeSortable(perGameResponseTable);
+
+  class Timedelta {
+    constructor(seconds) {
+      this.seconds = seconds;
+      this.minutes = seconds / 60;
+      this.hours = seconds / 3600;
+    }
+
+    toString(hours=true, minutes=true, seconds=false) {
+      let res = ''
+      if (hours)
+        res += Math.floor(this.hours);
+      if (hours && minutes)
+        res += ':';
+      if (minutes)
+        res += Math.floor(this.minutes) % 60;
+      if (minutes && seconds)
+        res += ':';
+      if (seconds)
+        res += Math.round(this.seconds) % 60;
+      return res;
+    }
+  }
 
   function updateTableDisplay() {
     perGameDisplay = !perGameDisplay;
@@ -103,11 +131,14 @@
     'assists': 0,
     'cs': 0,
     'visionScore': 0,
-    'damageDealt': 0
+    'damageDealt': 0,
+    'gameTime': 0
     */
 
     for (var summoner_i = 0; summoner_i < data.length; summoner_i++) {
       summoner = data[summoner_i];
+      gameTime = new Timedelta(summoner['gameTime']);
+
       row = cumulativeResponseBody.insertRow();
       row.insertCell().innerText = summoner['summonerName'];
       row.insertCell().innerText = summoner['encounters'];
@@ -118,6 +149,7 @@
       row.insertCell().innerText = summoner['cs'];
       row.insertCell().innerText = summoner['visionScore'];
       row.insertCell().innerText = summoner['damageDealt'];
+      row.insertCell().innerText = gameTime.toString();
 
       row = perGameResponseBody.insertRow();
       let encounters = summoner['encounters'];
@@ -127,17 +159,16 @@
       row.insertCell().innerText = (summoner['kills'] / encounters).toFixed(2);
       row.insertCell().innerText = (summoner['deaths'] / encounters).toFixed(2);
       row.insertCell().innerText = (summoner['assists'] / encounters).toFixed(2);
-      row.insertCell().innerText = (summoner['cs'] / encounters).toFixed(2);
+      row.insertCell().innerText = (summoner['cs'] / gameTime.minutes).toFixed(2);
       row.insertCell().innerText = (summoner['visionScore'] / encounters).toFixed(2);
       row.insertCell().innerText = (summoner['damageDealt'] / encounters).toFixed(2);
+      row.insertCell().innerText = new Timedelta(summoner['gameTime'] / encounters).toString();
     }
 
     responseStatus.innerText = '';
     displayModeButton.style.display = 'block';
     perGameResponseTable.style.display = 'block';
     perGameDisplay = true;
-    sorttable.makeSortable(cumulativeResponseTable);
-    sorttable.makeSortable(perGameResponseTable);
   }
 
   function generateResponse() {

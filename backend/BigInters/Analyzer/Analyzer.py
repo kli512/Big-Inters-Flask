@@ -4,7 +4,7 @@ from typing import Union, List
 
 from BigInters.Analyzer.RiotAPI import RiotAPI
 
-API_KEY = 'RGAPI-8b0f755b-b0cf-45b6-936d-1e1fb8d886d7'
+API_KEY = ''
 
 def run_analysis(summoner: str, n_matches: Union[str, int], queues: Union[List[str], List[int]], region: str):
     print('Starting player analysis', file=sys.stderr)
@@ -30,24 +30,30 @@ def run_analysis(summoner: str, n_matches: Union[str, int], queues: Union[List[s
         'assists': 0,
         'cs': 0,
         'visionScore': 0,
-        'damageDealt': 0
+        'damageDealt': 0,
+        'gameTime': 0
     })
 
     for match in matches:
         match_r = RAR.get(f'/lol/match/v4/matches/{match["gameId"]}')
+        match_data = match_r.json()
 
-        players = match_r.json()['participantIdentities']
+        match_time = match_data['gameDuration']
+
+        players = match_data['participantIdentities']
         players = {player['participantId']: player['player'] for player in players}
 
-        player_data = match_r.json()['participants']
+        player_data = match_data['participants']
 
-        team = list(filter(lambda p: players[p['participantId']]['accountId'] == account_eid, player_data))[0]['teamId']
+        team_id = list(filter(lambda p: players[p['participantId']]['accountId'] == account_eid, player_data))[0]['teamId']
 
         for player in player_data:
-            if player['teamId'] != team:
+            if player['teamId'] != team_id:
                 continue
             player_info = players[player['participantId']]
             account_id = player_info['accountId']
+
+            player_stats[account_id]['gameTime'] += match_time
 
             if player_stats[account_id]['summonerName'] == None:
                 player_stats[account_id]['summonerName'] = player_info['summonerName']

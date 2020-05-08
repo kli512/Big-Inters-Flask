@@ -72,8 +72,11 @@ sorttable = {
 	      // make it clickable to sort
 	      headrow[i].sorttable_columnindex = i;
 	      headrow[i].sorttable_tbody = table.tBodies[0];
-	      dean_addEvent(headrow[i],"click", sorttable.innerSortFunction = function(e) {
+	      // dean_addEvent(headrow[i],"click", sorttable.innerSortFunction = function(e) {
+	      headrow[i].addEventListener("click", sorttable.innerSortFunction = function(e) {
+          console.log('Sorting...')
           if (this.className.search(/\bsorttable_sorted\b/) != -1) {
+            console.log('Sorted already')
             // if we're already sorted by this column, just
             // reverse the table, which is quicker
             sorttable.reverse(this.sorttable_tbody);
@@ -87,6 +90,7 @@ sorttable = {
             return;
           }
           if (this.className.search(/\bsorttable_sorted_reverse\b/) != -1) {
+            console.log('Sorted reverse already')
             // if we're already sorted by this column in reverse, just
             // re-reverse the table, which is quicker
             sorttable.reverse(this.sorttable_tbody);
@@ -222,7 +226,7 @@ sorttable = {
      each sort function takes two parameters, a and b
      you are comparing a[0] and b[0] */
   sort_numeric: function(a,b) {
-    console.log('SORTING_NUMERIC');
+    // console.log('SORTING_NUMERIC');
     aa = parseFloat(a[0].replace(/[^0-9.-]/g,''));
     if (isNaN(aa)) aa = 0;
     bb = parseFloat(b[0].replace(/[^0-9.-]/g,''));
