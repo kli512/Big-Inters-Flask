@@ -1,6 +1,6 @@
 -e git+https://github.com/kli512/Big-Inters-Flask.git@73eb05a3c770f53216f657099dc41930e02ff416#egg=BigInters&subdirectory=backend
 -e git+https://github.com/kli512/Big-Inters-Flask.git@73eb05a3c770f53216f657099dc41930e02ff416#egg=BigIntersFrontend&subdirectory=frontend
-certifi==2019.11.28
+certifi==2022.12.7
 chardet==3.0.4
 click==7.1.1
 Flask==1.1.1
